@@ -1,0 +1,10 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+old
+
+/dataset/input
+/dataset/output
+/dataset/test_set
+*.pt
+*.jpg
+__pycache__
