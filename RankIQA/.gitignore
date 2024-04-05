@@ -7,7 +7,4 @@ old
 /dataset/test_set
 *.pt
 *.jpg
-*.dng
-*.tif
-*.tiff
 __pycache__
