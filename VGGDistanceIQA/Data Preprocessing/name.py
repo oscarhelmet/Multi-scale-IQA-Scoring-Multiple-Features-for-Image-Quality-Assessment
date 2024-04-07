@@ -1,5 +1,10 @@
 import os
 
+'''
+This script rename the files in the subdirectories of a directory.
+'''
+
+
 start_dir = '.'
 
 for dirpath, dirnames, filenames in os.walk(start_dir):
