@@ -2,9 +2,7 @@
 
 old
 
-/dataset/input
-/dataset/output
-/dataset/test_set
+*/dataset
 *.pt
 *.jpg
 *.dng
