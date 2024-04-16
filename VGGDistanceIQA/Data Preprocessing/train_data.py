@@ -61,9 +61,10 @@ def extract_features(image_path, layer_names):
 start_dir = 'dataset'  # Change this to the path of the dataset
 
 # Define output file
-output_file = 'data.csv'
+output_file = 'data1.csv'
 
-conv_extraction = ['conv1_1','conv2_2','conv3_3','conv4_3','conv5_3']
+# conv_extraction = ['conv1_1','conv2_2','conv3_3','conv4_3','conv5_3']
+conv_extraction = ['conv1_1']
 
 
 # Open the output file

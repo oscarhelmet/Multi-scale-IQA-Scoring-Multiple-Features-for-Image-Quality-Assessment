@@ -2,6 +2,7 @@
 
 old
 
+dataset
 /dataset/input
 /dataset/output
 /dataset/test_set
@@ -11,3 +12,5 @@ old
 *.tif
 *.tiff
 __pycache__
+*.csv
+*/.ipynb_checkpoints
