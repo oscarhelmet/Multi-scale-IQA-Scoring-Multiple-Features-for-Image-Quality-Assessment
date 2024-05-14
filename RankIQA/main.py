@@ -1,31 +1,25 @@
 import os
 import argparse
-import collections
-
-import cv2
 import numpy as np
-
 import torch
-from data_preprocessing import ImageDataset
 from torch.utils.data import DataLoader
-import torchvision
+from torchvision import transforms
 
-from model import *
-from utils import *
-
+from data_loader import ImageDataset  
+from model import Vgg16
+from utils import plcc, srocc
 
 def main(opt):
     print(opt)
 
-    # Set the random seed for reproducing.
+    # Set the random seed for reproducibility
     np.random.seed(1)
 
-    # Check GPU state.
-    use_cuda = torch.cuda.is_available()
-    device = torch.device("cuda" if use_cuda else "cpu")
-    print("cuda state: " + "available" if use_cuda else "unavailable")
+    # Check GPU availability
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"cuda state: {'available' if torch.cuda.is_available() else 'unavailable'}")
 
-    # Prepare the model.
+    # Prepare the model
     net = Vgg16()
     net.load_model(opt.model_file)
     net.to(device)
@@ -33,67 +27,53 @@ def main(opt):
 
     # Load the dataset
     lines = [line.rstrip('\n') for line in open(opt.test_file)]
-    files, mos = [], []
-    for i in lines:
-        files.append(i.split()[0])
-        mos.append(float(i.split()[1]))
-    mos = np.asarray(mos)
-    print(f"There're {len(files)} images in test set.")
+    files, mos = zip(*[line.split() for line in lines])
+    mos = np.array(mos, dtype=float)
+    print(f"There're {len(files)} images in the test set.")
 
-    # Create a list of tuples containing file paths and scores
-    dataset = [(file, score) for file, score in zip(files, mos)]
+    # Define transform for resizing and converting images
+    transform = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.ToTensor()
+    ])
 
-    # Create an instance of ImageDataset
-    test_dataset = ImageDataset(dataset)
+    # Create an instance of ImageDataset with transformations
+    test_dataset = ImageDataset(list(zip(files, mos)), transform=transform)
 
     # Create a DataLoader for the test dataset
     test_loader = DataLoader(test_dataset, batch_size=32, shuffle=True)
 
-    # Start to test.
-    # Start to test.
-    Num_Image = len(test_dataset)
-    pred = np.zeros(shape=Num_Image)
-    medn = np.zeros(shape=Num_Image)
+    # Testing loop
+    pred = np.zeros(len(test_dataset))
+    medn = np.zeros(len(test_dataset))
+
     with torch.no_grad():
-        for i, (image, score) in enumerate(test_loader):
-            image = image.to(device)
-            
-            # Get the pred scores.
-            score_pred = net(image)  # This network can only accept size(224x224) patch.
+        for i, (images, scores) in enumerate(test_loader):
+            images = images.to(device)
+            score_pred = net(images)
+            batch_start = i * test_loader.batch_size
+            batch_end = batch_start + images.size(0)
 
-            pred[i*test_loader.batch_size : (i+1)*test_loader.batch_size] = torch.mean(score_pred, dim=1).cpu().numpy()
-            medn[i*test_loader.batch_size : (i+1)*test_loader.batch_size] = torch.median(score_pred, dim=1).values.cpu().numpy()
+            pred[batch_start:batch_end] = torch.mean(score_pred, dim=1).cpu().numpy()
+            medn[batch_start:batch_end] = torch.median(score_pred, dim=1).values.cpu().numpy()
 
-            print(f"{i}: {files[i*test_loader.batch_size : (i+1)*test_loader.batch_size]} | {pred[i*test_loader.batch_size : (i+1)*test_loader.batch_size]} | {medn[i*test_loader.batch_size : (i+1)*test_loader.batch_size]}")
+            print(f"{i}: {pred[batch_start:batch_end]} | {medn[batch_start:batch_end]}")
 
+    # Performance metrics
     PLCC = plcc(pred, mos)
     SROCC = srocc(pred, mos)
     print(f"PLCC = {PLCC:.4f}, SROCC = {SROCC:.4f}")
 
-    if (opt.res_file is not None) and (opt.res_file.lower() != "none"):
-        with open(opt.res_file, mode='w') as f:
+    if opt.res_file:
+        with open(opt.res_file, 'w') as f:
             print(f"img_file,mos,pred,plcc,{PLCC:.4f},srcc,{SROCC:.4f}", file=f)
-            for (im, gt, pd) in zip(files, mos, pred):
+            for im, gt, pd in zip(files, mos, pred):
                 print(f"{im},{gt},{pd}", file=f)
-                
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-
-    # "/your_own_datasets_path/TID2013/"
-    # "/your_own_datasets_path/LIVE2/"
-    parser.add_argument("--test_set", type=str, default=None, help="test set path")
-
-    # "./pre-trained/Rank_tid2013.caffemodel.pt"
-    # "./pre-trained/FT_tid2013.caffemodel.pt"
-    # "./pre-trained/Rank_live.caffemodel.pt"
-    # "./pre-trained/FT_live.caffemodel.pt"
-    parser.add_argument("--model_file", type=str, default=None, help="trained model file")
-
-    # "./data/ft_tid2013_test.txt"
-    # "./data/ft_live_test.txt"
-    parser.add_argument("--test_file", type=str, default=None, help="file to store MOS and image filenames")
-
-    # "./result.csv"
-    parser.add_argument("--res_file", type=str, default=None, help="csv file to save the pred scores")
-
-    main(parser.parse_args())
+    parser.add_argument("--model_file", type=str, required=True, help="trained model file")
+    parser.add_argument("--test_file", type=str, required=True, help="file to store MOS and image filenames")
+    parser.add_argument("--res_file", type=str, help="csv file to save the pred scores")
+    args = parser.parse_args()
+    main(args)

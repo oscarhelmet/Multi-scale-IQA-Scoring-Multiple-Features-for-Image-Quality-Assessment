@@ -58,42 +58,44 @@ def extract_features(image_path, layer_names):
     return features
 
 # Walk through each directory
-start_dir = 'dataset'  # Change this to the path of the dataset
+start_dir = '..\\..\\dataset\\output'  # Change this to the path of the dataset
 
 # Define output file
-output_file = 'data1.csv'
+output_file = 'data.csv'
 
-# conv_extraction = ['conv1_1','conv2_2','conv3_3','conv4_3','conv5_3']
-conv_extraction = ['conv1_1']
+conv_extraction = ['conv1_1','conv2_2','conv3_3','conv4_3','conv5_3']
 
 
-# Open the output file
+
 with open(output_file, 'w') as f:
-    prev_set_id = None
-    reference_features = None
-
     for dirpath, dirnames, filenames in os.walk(start_dir):
-        filenames.sort()  # Sort the filenames to ensure correct order
+        for degradation_set in sorted(dirnames):
+            degradation_set_path = os.path.join(dirpath, degradation_set)
+            for subdirname in sorted(os.listdir(degradation_set_path)):
+                subdirectory_path = os.path.join(degradation_set_path, subdirname)
 
-        for filename in filenames:
-            if not filename.lower().endswith('.jpg'):
-                continue
+                # Check if the directory is indeed a directory
+                if not os.path.isdir(subdirectory_path):
+                    continue
 
-            image_path = os.path.join(dirpath, filename)
-            set_id = filename.split('_')[0]
+                # Identify the reference photo, which is always '10.jpg'
+                reference_file = '10.jpg'
+                reference_path = os.path.join(subdirectory_path, reference_file)
+                if not os.path.exists(reference_path):
+                    print(f"Reference image not found: {reference_path}")
+                    continue
 
-            if set_id != prev_set_id:
-                # New set of images, update the reference image
-                reference_file = f"{set_id}_0.jpg"
-                reference_path = os.path.join(dirpath, reference_file)
                 reference_features = extract_features(reference_path, conv_extraction)
-                prev_set_id = set_id
 
-            if filename.endswith('_0.jpg'):
-                # Skip the reference image
-                continue
+                # Process all jpg files in the subdirectory
+                photo_files = [file for file in os.listdir(subdirectory_path) if file.lower().endswith('.jpg')]
+                for photo_file in sorted(photo_files):
+                    photo_path = os.path.join(subdirectory_path, photo_file)
+                    photo_features = extract_features(photo_path, conv_extraction)
+                    diff = photo_features - reference_features
 
-            image_features = extract_features(image_path, conv_extraction)
-            diff = image_features - reference_features
-            f.write(','.join(map(str, diff.tolist())) + '\n')
-            print(f"computed the difference between {image_path} and {reference_path}")
+                # Save the difference to the file
+                f.write(','.join(map(str, diff.tolist())) + '\n')
+                print(f"Computed the difference between {subdirectory_path} {reference_path} and {photo_path}")
+
+print("All comparisons are completed and saved.")

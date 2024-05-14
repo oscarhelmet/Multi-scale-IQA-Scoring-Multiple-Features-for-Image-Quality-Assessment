@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Quality Assessment</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <style>
+        :root {
+            --primary-color: #0964b0;
+        }
+
+        body {
+            background: #1f3244;
+            min-height: 100vh;
+            max-width: 100vw;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 5vmax;
+            box-sizing: border-box;
+            color: #ffffff;
+        }
+
+        div {
+            background-color: #efefef;
+            padding: 32px;
+            border-radius: 20px;
+            color: #000;
+        }
+
+        input[type="file"] {
+            padding: 4px;
+            margin: -4px;
+            position: relative;
+            outline: none;
+        }
+
+        input[type="file"]::file-selector-button {
+            border-radius: 4px;
+            padding: 0 16px;
+            height: 40px;
+            cursor: pointer;
+            background-color: white;
+            border: 1px solid rgba(0, 0, 0, 0.16);
+            box-shadow: 0px 1px 0px rgba(0, 0, 0, 0.05);
+            margin-right: 16px;
+            width: 132px;
+            color: transparent;
+        }
+
+        input[type="file"]::file-selector-button:hover {
+            background-color: #f3f4f6;
+        }
+
+        input[type="file"]::file-selector-button:active {
+            background-color: #e5e7eb;
+        }
+
+        input[type="file"]::before {
+            position: absolute;
+            pointer-events: none;
+            top: 14px;
+            left: 16px;
+            height: 20px;
+            width: 20px;
+            content: "";
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230964B0'%3E%3Cpath d='M18 15v3H6v-3H4v3c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-3h-2zM7 9l1.41 1.41L11 7.83V16h2V7.83l2.59 2.58L17 9l-5-5-5 5z'/%3E%3C/svg%3E");
+        }
+
+        input[type="file"]::after {
+            position: absolute;
+            pointer-events: none;
+            top: 16px;
+            left: 40px;
+            color: var(--primary-color);
+            content: "Upload File";
+        }
+
+        input[type="file"]:focus-within::file-selector-button,
+        input[type="file"]:focus::file-selector-button {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
+        }
+
+        .modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            visibility: hidden;
+            /* Initially hidden */
+            opacity: 0;
+            transition: visibility 0s, opacity 0.5s linear;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container mt-5">
+       <h1>Multi-Scale Image Quality Assessment</h1>
+        <h5>by SO Chak Hei 1155143186</h5>
+        <div class="row">
+            <!-- Left column for the form -->
+            <div class="col-md-7">
+                <div class="row">
+                    <div class="col-md-6">
+                        <form id="image-form" method="post" enctype="multipart/form-data">
+                            <label for="target_image">Upload Target Image:</label>
+                            <input type="file" name="target_image" id="target_image" required
+                                onchange="previewImage(this, 'target_preview')">
+                            <br><br>
+                            <button class="btn btn-success" type="submit">Assess</button>
+
+                        </form>
+
+                    </div>
+                    <div class="col-md-6">
+                        <div class="image-placeholder" id="target_preview_placeholder">
+                            <img id="target_preview" style="max-width: 100%; max-height: 200px; display: none;"
+                                alt="Target Image Preview">
+                            Target Image
+                        </div>
+                        <br><br>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right column for the results -->
+            <div class="col-md-5">
+                {% if score is not none %}
+                <h2>Assessment Result</h2>
+                <h4>
+                    <p>Score: {{ score }}</p>
+                </h4>
+                <p>Legend: 0 - Bad, 9 - Best</p>
+                {% endif %}
+            </div>
+        </div>
+        <a class="btn btn-outline-danger" href="/" role="button">Back</a>
+    </div>
+
+    <style>
+        .image-placeholder {
+            width: 100%;
+            height: 200px;
+            background-color: #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+
+    <script>
+
+        function previewImage(input, previewId) {
+            var previewPlaceholder = document.getElementById(previewId + '_placeholder');
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    var previewElement = document.createElement('img');
+                    previewElement.src = e.target.result;
+                    previewElement.style.maxWidth = '100%';
+                    previewElement.style.maxHeight = '200px';
+                    previewPlaceholder.innerHTML = '';  // Clear the placeholder
+                    previewPlaceholder.appendChild(previewElement);  // Add the image
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
+
+
+</body>
+
+</html>
